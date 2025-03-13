@@ -1,0 +1,7 @@
+name = "dart-worker-example"
+compatibility_date = "2022-11-30"
+main = "build/main.js"
+
+[build]
+command = "dart compile js lib/main.dart -o build/main.js"
+watch_dir = ["lib"]

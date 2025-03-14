@@ -6,6 +6,6 @@
   "scripts": {
   },
   "devDependencies": {
-    "wrangler": "^3.114.1"
+    "wrangler": "^4.0.0"
   }
 }

@@ -57,7 +57,6 @@ const template = """
   }
 
   const url = new URL(window.location)
-  url.protocol = "wss"
   url.pathname = "/ws"
   websocket(url)
 

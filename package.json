@@ -4,6 +4,7 @@
   "version": "1.0.0",
   "description": "Dart hello world for Cloudflare Workers",
   "scripts": {
+    "dev": "wrangler dev --local"
   },
   "devDependencies": {
     "wrangler": "^4.0.0"

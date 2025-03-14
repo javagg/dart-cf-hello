@@ -41,8 +41,13 @@ extension type WebSocketPair._(JSObject _) implements JSObject {
   WebSocket get server => this.getProperty("1".toJS);
 }
 
-extension type WsEvent._(JSObject _) implements JSObject {
+extension type MessageEvent._(JSObject _) implements JSObject {
   external String get data;
+}
+
+extension type CloseEvent._(JSObject _) implements JSObject {
+  external int get code;
+  external String get reason;
 }
 
 extension type WebSocket._(JSObject _) implements JSObject {
@@ -81,12 +86,12 @@ void handleSession(WebSocket websocket) {
   websocket.accept();
   websocket.addEventListener(
       "message",
-      ((event) {
+      ((MessageEvent event) {
         if (event.data == "CLICK") {
           // count += 1
           websocket.sendString(jsonEncode({
             "count": 1,
-            "tz": DateTime.now(),
+            "tz": DateTime.now().toUtc().toIso8601String(),
           }));
         } else {
           // An unknown message came into the server. Send back an error message
@@ -98,13 +103,14 @@ void handleSession(WebSocket websocket) {
 
   websocket.addEventListener(
       "close",
-      ((event) {
+      ((CloseEvent event) {
         // Handle when a client closes the WebSocket connection
-        print(event);
+        print(event.reason);
       }).toJS);
 }
 
 Response handleWebSocket(Request request) {
+  print(request.headers);
   var upgradeHeader = request.headers.get("Upgrade");
   print(upgradeHeader);
   if (upgradeHeader != "websocket") {

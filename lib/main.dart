@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:js_interop';
 import 'dart:js_interop_unsafe';
 import 'dart:convert';
@@ -31,7 +32,7 @@ extension type Response._(JSObject _) implements JSObject {
 extension type FetchEvent._(JSObject _) implements JSObject {
   external Request get request;
   // Accept either Response or Future<Response> (as JSPromise)
-  external void respondWith(JSAny r);
+  external void respondWith(JSAny r); // JSAny = Response | JSPromise<Response>
 }
 
 extension type WebSocketPair._(JSObject _) implements JSObject {
@@ -66,15 +67,17 @@ extension type WebSocket._(JSObject _) implements JSObject {
 @JS()
 external void addEventListener(String type, JSFunction callback);
 
-Response handleRequest(Request request) {
+Response handle(Request request) {
   var uri = Uri.parse(request.url);
   switch (uri.path) {
     case "/":
       return new Response(
-          template,
-          ResponseInit(
-              status: 200,
-              headers: Headers()..append("Content-Type", "text/html")));
+        template,
+        ResponseInit(
+          status: 200,
+          headers: Headers()..append("Content-Type", "text/html"),
+        ),
+      );
     case "/ws":
       return handleWebSocket(request);
     default:
@@ -82,31 +85,38 @@ Response handleRequest(Request request) {
   }
 }
 
+Future<Response> handleAsync(Request request) async {
+  await new Future.delayed(Duration(seconds: 1));
+  return new Response("hello request");
+}
+
 void handleSession(WebSocket websocket) {
   websocket.accept();
   websocket.addEventListener(
-      "message",
-      ((MessageEvent event) {
-        if (event.data == "CLICK") {
-          // count += 1
-          websocket.sendString(jsonEncode({
+    "message",
+    ((MessageEvent event) {
+      if (event.data == "CLICK") {
+        // count += 1
+        websocket.sendString(
+          jsonEncode({
             "count": 1,
             "tz": DateTime.now().toUtc().toIso8601String(),
-          }));
-        } else {
-          // An unknown message came into the server. Send back an error message
-          websocket.sendString(jsonEncode({
-            "error": "Unknown message received",
-          }));
-        }
-      }).toJS);
+          }),
+        );
+      } else {
+        // An unknown message came into the server. Send back an error message
+        websocket.sendString(jsonEncode({"error": "Unknown message received"}));
+      }
+    }).toJS,
+  );
 
   websocket.addEventListener(
-      "close",
-      ((CloseEvent event) {
-        // Handle when a client closes the WebSocket connection
-        print(event.reason);
-      }).toJS);
+    "close",
+    ((CloseEvent event) {
+      // Handle when a client closes the WebSocket connection
+      print(event.reason);
+    }).toJS,
+  );
 }
 
 Response handleWebSocket(Request request) {
@@ -124,10 +134,14 @@ Response handleWebSocket(Request request) {
   return new Response(null, ResponseInit(status: 101, webSocket: client));
 }
 
-Future<void> main() async {
+void main() {
   addEventListener(
-      'fetch',
-      ((FetchEvent event) {
-        event.respondWith(handleRequest(event.request));
-      }).toJS);
+    'fetch',
+    (FetchEvent event) {
+      // var response = handle(event.request);
+      // event.respondWith(response);
+      var response = handleAsync(event.request);
+      event.respondWith(response.toJS);
+    }.toJS,
+  );
 }
